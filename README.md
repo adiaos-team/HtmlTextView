@@ -20,7 +20,8 @@
 
 ### 导入
 ```
-implementation 'com.dyhdyh.support:html-textview:3.6.2'
+ implementation 'com.github.adiaos-team:HtmlTextView:1.0'
+
 ```
 
 ### 自定义URL点击事件  
