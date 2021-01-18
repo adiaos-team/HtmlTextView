@@ -1,0 +1,27 @@
+apply plugin: 'com.android.library'
+apply plugin: 'bintray-release'
+
+android {
+    compileSdkVersion 29
+
+    defaultConfig {
+        minSdkVersion 14
+        targetSdkVersion 29
+        versionName '3.8'
+    }
+}
+
+publish {
+    userOrg = 'sufficientlysecure'
+    groupId = 'org.sufficientlysecure'
+    artifactId = 'html-textview'
+    publishVersion = android.defaultConfig.versionName
+    website = 'https://github.com/SufficientlySecure/html-textview'
+    desc = 'HtmlTextView is an extended TextView component for Android, which can load HTML and converts it into Spannable for displaying it.'
+}
+
+dependencies {
+    implementation 'androidx.annotation:annotation:1.1.0'
+    api files('libs/htmlcleaner-2.22.jar')
+    api files('libs/cssparser-1.5.jar')
+}
