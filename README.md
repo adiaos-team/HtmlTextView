@@ -3,6 +3,8 @@
 本项目结合[SufficientlySecure/html-textview](https://github.com/SufficientlySecure/html-textview) version 4.0 和[xiandanin
 /html-textview](https://github.com/xiandanin/html-textview) 来满足实际项目中开发需求，只是做了简单的拼接，特此感谢两位作者
 
+### Import
+implementation 'com.github.adiaos-team:HtmlTextView:1.0'
 
 以下为[xiandanin/html-textview](https://github.com/xiandanin/html-textview) 的README
 
