@@ -16,29 +16,23 @@
 
 package net.nightwhistler.htmlspanner;
 
-import android.text.Html;
-import android.text.Spannable;
-import android.text.SpannableStringBuilder;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
+import java.util.HashMap;
+import java.util.Map;
 
+import android.util.Log;
+
+import net.nightwhistler.htmlspanner.css.CSSCompiler;
 import net.nightwhistler.htmlspanner.exception.ParsingCancelledException;
-import net.nightwhistler.htmlspanner.handlers.FontHandler;
-import net.nightwhistler.htmlspanner.handlers.HeaderHandler;
-import net.nightwhistler.htmlspanner.handlers.ImageHandler;
-import net.nightwhistler.htmlspanner.handlers.LinkHandler;
-import net.nightwhistler.htmlspanner.handlers.ListItemHandler;
-import net.nightwhistler.htmlspanner.handlers.MonoSpaceHandler;
-import net.nightwhistler.htmlspanner.handlers.NewLineHandler;
-import net.nightwhistler.htmlspanner.handlers.PreHandler;
-import net.nightwhistler.htmlspanner.handlers.StyleNodeHandler;
-import net.nightwhistler.htmlspanner.handlers.StyledTextHandler;
-import net.nightwhistler.htmlspanner.handlers.SubScriptHandler;
-import net.nightwhistler.htmlspanner.handlers.SuperScriptHandler;
-import net.nightwhistler.htmlspanner.handlers.TextLinesHandler;
+import net.nightwhistler.htmlspanner.handlers.*;
 import net.nightwhistler.htmlspanner.handlers.attributes.AlignmentAttributeHandler;
+
 import net.nightwhistler.htmlspanner.handlers.attributes.BorderAttributeHandler;
 import net.nightwhistler.htmlspanner.handlers.attributes.StyleAttributeHandler;
-import net.nightwhistler.htmlspanner.handlers.listeners.OnClickUrlListener;
 import net.nightwhistler.htmlspanner.style.Style;
+import net.nightwhistler.htmlspanner.handlers.StyledTextHandler;
 import net.nightwhistler.htmlspanner.style.StyleValue;
 
 import org.htmlcleaner.CleanerProperties;
@@ -46,11 +40,11 @@ import org.htmlcleaner.ContentNode;
 import org.htmlcleaner.HtmlCleaner;
 import org.htmlcleaner.TagNode;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.Reader;
-import java.util.HashMap;
-import java.util.Map;
+import android.text.Spannable;
+import android.text.SpannableStringBuilder;
+
+import com.osbcp.cssparser.CSSParser;
+import com.osbcp.cssparser.Rule;
 
 /**
  * HtmlSpanner provides an alternative to Html.fromHtml() from the Android
@@ -72,15 +66,23 @@ public class HtmlSpanner {
 
     private Map<String, TagNodeHandler> handlers;
 
-    private OnClickUrlListener mOnClickUrlListener;
-
     private boolean stripExtraWhiteSpace = false;
-
-    private Html.ImageGetter imageGetter;
 
     private HtmlCleaner htmlCleaner;
 
     private FontResolver fontResolver;
+
+    private ContrastPatcher contrastPatcher = new ContrastPatcher() {
+        @Override
+        public Integer patchBackgroundColor(Style style) {
+            return style.getBackgroundColor();
+        }
+
+        @Override
+        public Integer patchFontColor(Style style) {
+            return style.getColor();
+        }
+    };
 
     /**
      * Switch to determine if CSS is used
@@ -92,16 +94,17 @@ public class HtmlSpanner {
      */
     private boolean useColoursFromStyle = true;
 
+    /**
+     * If CSS can be used to change the font size
+     */
+    private boolean useFontSizeFromStyle = true;
+
 
     /**
      * Creates a new HtmlSpanner using a default HtmlCleaner instance.
      */
     public HtmlSpanner() {
-        this(null, null, null);
-    }
-
-    public HtmlSpanner(FontResolver fontResolver, Html.ImageGetter imageGetter, OnClickUrlListener listener) {
-        this(createHtmlCleaner(), fontResolver, imageGetter, listener);
+        this(createHtmlCleaner(), new SystemFontResolver());
     }
 
     /**
@@ -111,12 +114,10 @@ public class HtmlSpanner {
      *
      * @param cleaner
      */
-    public HtmlSpanner(HtmlCleaner cleaner, FontResolver fontResolver, Html.ImageGetter imageGetter, OnClickUrlListener listener) {
+    public HtmlSpanner(HtmlCleaner cleaner, FontResolver fontResolver) {
         this.htmlCleaner = cleaner;
-        this.fontResolver = fontResolver == null ? new SystemFontResolver() : fontResolver;
+        this.fontResolver = fontResolver;
         this.handlers = new HashMap<String, TagNodeHandler>();
-        this.imageGetter = imageGetter;
-        this.mOnClickUrlListener = listener;
 
         registerBuiltInHandlers();
     }
@@ -150,6 +151,24 @@ public class HtmlSpanner {
      */
     public boolean isStripExtraWhiteSpace() {
         return stripExtraWhiteSpace;
+    }
+
+    /**
+     * Update the ContrastPatcher instance
+     *
+     * @param patcher
+     */
+    public void setContrastPatcher(ContrastPatcher patcher) {
+        this.contrastPatcher = patcher;
+    }
+
+    /**
+     * Returns the ContrastPatcher instance which might will modify the font/background color
+     *
+     * @return
+     */
+    public ContrastPatcher getContrastPatcher() {
+        return this.contrastPatcher;
     }
 
     /**
@@ -189,6 +208,21 @@ public class HtmlSpanner {
     }
 
     /**
+     * Switch to specify if the font size can be changed from CSS.
+     * Headings, <big> and <small> will work independent of this setting.
+     *
+     * @param value
+     */
+    public void setUseFontSizeFromStyle(boolean value) {
+        this.useFontSizeFromStyle = value;
+    }
+
+
+    public boolean isUseFontSizeFromStyle() {
+        return this.useFontSizeFromStyle;
+    }
+
+    /**
      * Registers a new custom TagNodeHandler.
      * <p>
      * If a TagNodeHandler was already registered for the specified tagName it
@@ -219,6 +253,32 @@ public class HtmlSpanner {
      */
     public Spannable fromHtml(String html) {
         return fromTagNode(this.htmlCleaner.clean(html), null);
+    }
+
+    public Spannable fromHtml(String html, String css) {
+        return fromTagNode(htmlCleaner.clean(html), css, null);
+    }
+
+    private Spannable fromTagNode(TagNode node, String css, CancellationCallback cancellationCallback) {
+        SpannableStringBuilder result = new SpannableStringBuilder();
+        SpanStack stack = new SpanStack();
+
+        parseCSSFromText(css, stack);
+        applySpan(result, node, stack, cancellationCallback);
+
+        stack.applySpans(this, result);
+
+        return result;
+    }
+
+    private void parseCSSFromText(String css, SpanStack spanStack) {
+        try {
+            for (Rule rule : CSSParser.parse(css)) {
+                spanStack.registerCompiledRule(CSSCompiler.compile(rule, this));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public Spannable fromHtml(String html, CancellationCallback cancellationCallback) {
@@ -371,25 +431,18 @@ public class HtmlSpanner {
 
     private void registerBuiltInHandlers() {
 
-        TagNodeHandler italicHandler = wrap(new StyledTextHandler(
-                new Style().setFontStyle(Style.FontStyle.ITALIC)));
+        TagNodeHandler italicHandler = new StyledTextHandler(
+                new Style().setFontStyle(Style.FontStyle.ITALIC));
 
         registerHandler("i", italicHandler);
         registerHandler("em", italicHandler);
         registerHandler("cite", italicHandler);
         registerHandler("dfn", italicHandler);
 
-        TagNodeHandler underlineHandler = wrap(new TextLinesHandler(
-                new Style().setTextLinesStyle(Style.TextLinesStyle.UNDERLINE)));
-        registerHandler("u", underlineHandler);
+        TagNodeHandler boldHandler = new StyledTextHandler(
+                new Style().setFontWeight(Style.FontWeight.BOLD));
 
-        TagNodeHandler strikelineHandler = wrap(new TextLinesHandler(
-                new Style().setTextLinesStyle(Style.TextLinesStyle.LINE_THROUGH)));
-        registerHandler("s", strikelineHandler);
-
-        TagNodeHandler boldHandler = wrap(new StyledTextHandler(
-                new Style().setFontWeight(Style.FontWeight.BOLD)));
-
+        registerHandler("u", new UnderlineHandler());
         registerHandler("b", boldHandler);
         registerHandler("strong", boldHandler);
 
@@ -420,7 +473,6 @@ public class HtmlSpanner {
                 .setMarginBottom(
                         new StyleValue(1.0f, StyleValue.Unit.EM));
 
-        registerHandler("span", wrap(new StyledTextHandler()));
 
         TagNodeHandler pHandler = new BorderAttributeHandler(wrap(new StyledTextHandler(paragraphStyle)));
 
@@ -460,14 +512,24 @@ public class HtmlSpanner {
 
         registerHandler("li", new ListItemHandler());
 
-        registerHandler("a", wrap(new LinkHandler().setOnClickUrlListener(mOnClickUrlListener)));
-        registerHandler("img", new ImageHandler(imageGetter));
+        registerHandler("a", new LinkHandler());
+        registerHandler("img", new ImageHandler());
 
         registerHandler("font", new FontHandler());
 
+        Style spanStyle = new Style().setDisplayStyle(Style.DisplayStyle.INLINE);
+        TagNodeHandler spanHandler = new BorderAttributeHandler(wrap(new StyledTextHandler(spanStyle)));
+        registerHandler("span", spanHandler);
+
+        registerHandler("hr", new HorizontalRuleHandler());
+
+        registerHandler("del", new StrikeThroughHandler());
+        registerHandler("s", new StrikeThroughHandler());
+        registerHandler("strike", new StrikeThroughHandler());
+
     }
 
-    public interface CancellationCallback {
+    public static interface CancellationCallback {
         boolean isCancelled();
     }
 

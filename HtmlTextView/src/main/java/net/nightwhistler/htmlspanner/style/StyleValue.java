@@ -1,6 +1,7 @@
 package net.nightwhistler.htmlspanner.style;
 
 import android.util.Log;
+import net.nightwhistler.htmlspanner.HtmlSpanner;
 
 /**
  * Created with IntelliJ IDEA.

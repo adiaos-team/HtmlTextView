@@ -11,7 +11,7 @@ import android.text.SpannableStringBuilder;
  */
 public interface SpanCallback {
 
-    void applySpan(HtmlSpanner spanner, SpannableStringBuilder builder);
+    void applySpan( HtmlSpanner spanner, SpannableStringBuilder builder );
 
 }
 

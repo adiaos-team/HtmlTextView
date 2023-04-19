@@ -16,14 +16,14 @@
 
 package net.nightwhistler.htmlspanner.handlers;
 
-import android.text.SpannableStringBuilder;
-
 import net.nightwhistler.htmlspanner.FontFamily;
 import net.nightwhistler.htmlspanner.SpanStack;
+
 import net.nightwhistler.htmlspanner.css.CSSCompiler;
 import net.nightwhistler.htmlspanner.style.Style;
-
 import org.htmlcleaner.TagNode;
+
+import android.text.SpannableStringBuilder;
 
 /**
  * Handler for font-tags
@@ -31,14 +31,10 @@ import org.htmlcleaner.TagNode;
 public class FontHandler extends StyledTextHandler {
 
     public FontHandler() {
-        super();
+        super(new Style());
     }
 
-    public FontHandler(Style style) {
-        super(style);
-    }
-
-    @Override
+	@Override
 	public void handleTagNode(TagNode node, SpannableStringBuilder builder,
 			int start, int end, Style style, SpanStack spanStack) {
 

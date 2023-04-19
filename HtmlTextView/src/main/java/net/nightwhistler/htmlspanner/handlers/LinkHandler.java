@@ -16,44 +16,27 @@
 package net.nightwhistler.htmlspanner.handlers;
 
 
-import android.text.SpannableStringBuilder;
-import android.text.TextUtils;
-import android.view.View;
-
 import net.nightwhistler.htmlspanner.SpanStack;
-import net.nightwhistler.htmlspanner.handlers.listeners.OnClickUrlListener;
-import net.nightwhistler.htmlspanner.spans.URLStyleSpan;
-import net.nightwhistler.htmlspanner.style.Style;
+import net.nightwhistler.htmlspanner.TagNodeHandler;
 
 import org.htmlcleaner.TagNode;
 
+import android.text.SpannableStringBuilder;
+import android.text.style.URLSpan;
+
 /**
  * Creates clickable links.
- *
+ * 
  * @author Alex Kuiper
+ * 
  */
-public class LinkHandler extends StyledTextHandler {
-    private OnClickUrlListener mOnClickUrlListener;
+public class LinkHandler extends TagNodeHandler {
 
-    public LinkHandler setOnClickUrlListener(OnClickUrlListener listener) {
-        this.mOnClickUrlListener = listener;
-        return this;
-    }
+	@Override
+	public void handleTagNode(TagNode node, SpannableStringBuilder builder,
+			int start, int end, SpanStack spanStack) {
 
-    @Override
-    public void handleTagNode(TagNode node, SpannableStringBuilder builder, int start, int end, Style useStyle, SpanStack stack) {
-        super.handleTagNode(node, builder, start, end, useStyle, stack);
-        final String href = node.getAttributeByName("href");
-        final String style = node.getAttributeByName("style");
-        stack.pushSpan(new URLStyleSpan(href, TextUtils.isEmpty(style)) {
-            @Override
-            public void onClick(View widget) {
-                if (mOnClickUrlListener == null || !mOnClickUrlListener.onClickUrl(widget, href)) {
-                    super.onClick(widget);
-                }
-            }
-        }, start, end);
-    }
-
-
+		final String href = node.getAttributeByName("href");
+		spanStack.pushSpan(new URLSpan(href), start, end);
+	}
 }

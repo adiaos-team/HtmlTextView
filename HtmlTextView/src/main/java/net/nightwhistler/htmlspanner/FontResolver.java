@@ -13,6 +13,6 @@ public interface FontResolver {
 
     FontFamily getMonoSpaceFont();
 
-    FontFamily getFont(String name);
+    FontFamily getFont( String name );
 
 }

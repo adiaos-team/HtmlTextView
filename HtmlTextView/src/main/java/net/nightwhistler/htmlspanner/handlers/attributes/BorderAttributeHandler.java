@@ -2,12 +2,11 @@ package net.nightwhistler.htmlspanner.handlers.attributes;
 
 import android.text.SpannableStringBuilder;
 import android.util.Log;
-
 import net.nightwhistler.htmlspanner.SpanStack;
+import net.nightwhistler.htmlspanner.TagNodeHandler;
 import net.nightwhistler.htmlspanner.handlers.StyledTextHandler;
 import net.nightwhistler.htmlspanner.spans.BorderSpan;
 import net.nightwhistler.htmlspanner.style.Style;
-
 import org.htmlcleaner.TagNode;
 
 /**
@@ -29,7 +28,7 @@ public class BorderAttributeHandler extends WrappingStyleHandler {
 
         if ( node.getAttributeByName("border") != null ) {
             Log.d("BorderAttributeHandler", "Adding BorderSpan from " + start + " to " + end);
-            spanStack.pushSpan(new BorderSpan(useStyle, start, end, getSpanner().isUseColoursFromStyle() ), start, end);
+            spanStack.pushSpan(new BorderSpan(useStyle, start, end, getSpanner()), start, end);
         }
 
         super.handleTagNode(node, builder, start, end, useStyle, spanStack);

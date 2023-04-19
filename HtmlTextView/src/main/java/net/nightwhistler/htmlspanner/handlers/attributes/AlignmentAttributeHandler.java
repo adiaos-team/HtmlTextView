@@ -15,13 +15,12 @@
  */
 package net.nightwhistler.htmlspanner.handlers.attributes;
 
-import android.text.SpannableStringBuilder;
-
 import net.nightwhistler.htmlspanner.SpanStack;
-import net.nightwhistler.htmlspanner.handlers.StyledTextHandler;
 import net.nightwhistler.htmlspanner.style.Style;
-
+import net.nightwhistler.htmlspanner.handlers.StyledTextHandler;
 import org.htmlcleaner.TagNode;
+
+import android.text.SpannableStringBuilder;
 
 /**
  * Handler for align='left|right|center' attributes.

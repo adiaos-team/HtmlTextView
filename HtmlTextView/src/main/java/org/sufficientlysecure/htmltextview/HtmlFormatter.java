@@ -61,7 +61,7 @@ public class HtmlFormatter {
             formattedHtml = Html.fromHtml(html, imageGetter, new WrapperContentHandler(htmlTagHandler));
         }*/
         Spannable formattedHtml;
-        HtmlSpanner htmlSpanner = new HtmlSpanner(null, imageGetter, null);;
+        HtmlSpanner htmlSpanner = new HtmlSpanner();
 
         if (removeTrailingWhiteSpace) {
 

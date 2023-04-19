@@ -15,12 +15,11 @@
  */
 package net.nightwhistler.htmlspanner.handlers;
 
-import android.text.SpannableStringBuilder;
-
 import net.nightwhistler.htmlspanner.SpanStack;
-import net.nightwhistler.htmlspanner.TagNodeHandler;
-
 import org.htmlcleaner.TagNode;
+
+import android.text.SpannableStringBuilder;
+import net.nightwhistler.htmlspanner.TagNodeHandler;
 
 /**
  * Adds a specified number of newlines.

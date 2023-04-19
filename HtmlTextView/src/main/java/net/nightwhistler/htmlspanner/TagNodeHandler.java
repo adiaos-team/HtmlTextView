@@ -15,9 +15,12 @@
  */
 package net.nightwhistler.htmlspanner;
 
-import android.text.SpannableStringBuilder;
+import android.util.Log;
+import net.nightwhistler.htmlspanner.spans.FontFamilySpan;
 
 import org.htmlcleaner.TagNode;
+
+import android.text.SpannableStringBuilder;
 
 /**
  * A TagNodeHandler handles a specific type of tag (a, img, p, etc), and adds

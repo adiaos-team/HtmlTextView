@@ -15,60 +15,62 @@
  */
 package net.nightwhistler.htmlspanner.handlers;
 
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.drawable.Drawable;
-import android.text.Html;
-import android.text.SpannableStringBuilder;
-import android.text.style.ImageSpan;
+import java.io.IOException;
+import java.net.URL;
 
 import net.nightwhistler.htmlspanner.SpanStack;
 import net.nightwhistler.htmlspanner.TagNodeHandler;
 
 import org.htmlcleaner.TagNode;
 
-import java.io.IOException;
-import java.net.URL;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
+import android.text.Spannable;
+import android.text.SpannableStringBuilder;
+import android.text.style.ImageSpan;
 
 /**
  * Handles image tags.
- * <p>
+ * 
  * The default implementation tries to load images through a URL.openStream(),
  * override loadBitmap() to implement your own loading.
- *
+ * 
  * @author Alex Kuiper
+ * 
  */
 public class ImageHandler extends TagNodeHandler {
-    private Html.ImageGetter mImageGetter;
 
-    public ImageHandler(Html.ImageGetter imageGetter) {
-        this.mImageGetter = imageGetter;
-    }
+	@Override
+	public void handleTagNode(TagNode node, SpannableStringBuilder builder,
+			int start, int end, SpanStack stack) {
+		String src = node.getAttributeByName("src");
 
-    @Override
-    public void handleTagNode(TagNode node, SpannableStringBuilder builder,
-                              int start, int end, SpanStack stack) {
-        String src = node.getAttributeByName("src");
+		builder.append("\uFFFC");
 
-        builder.append("\uFFFC");
+		Bitmap bitmap = loadBitmap(src);
 
-        final Drawable drawable = mImageGetter.getDrawable(src);
-        if (drawable != null) {
-            stack.pushSpan(new ImageSpan(drawable), start, builder.length());
-        }
-    }
+		if (bitmap != null) {
+			Drawable drawable = new BitmapDrawable(bitmap);
+			drawable.setBounds(0, 0, bitmap.getWidth() - 1,
+					bitmap.getHeight() - 1);
 
-    /**
-     * Loads a Bitmap from the given url.
-     *
-     * @param url
-     * @return a Bitmap, or null if it could not be loaded.
-     */
-    protected Bitmap loadBitmap(String url) {
-        try {
-            return BitmapFactory.decodeStream(new URL(url).openStream());
-        } catch (IOException io) {
-            return null;
-        }
-    }
+            stack.pushSpan( new ImageSpan(drawable), start, builder.length() );
+		}
+	}
+
+	/**
+	 * Loads a Bitmap from the given url.
+	 * 
+	 * @param url
+	 * @return a Bitmap, or null if it could not be loaded.
+	 */
+	protected Bitmap loadBitmap(String url) {
+		try {
+			return BitmapFactory.decodeStream(new URL(url).openStream());
+		} catch (IOException io) {
+			return null;
+		}
+	}
 }
